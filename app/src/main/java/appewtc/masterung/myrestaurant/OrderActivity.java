@@ -1,5 +1,8 @@
 package appewtc.masterung.myrestaurant;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -10,6 +13,16 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+
+import java.util.ArrayList;
 
 public class OrderActivity extends AppCompatActivity {
 
@@ -42,14 +55,62 @@ public class OrderActivity extends AppCompatActivity {
 
         FoodTABLE objFoodTABLE = new FoodTABLE(this);
         String[] strSource = objFoodTABLE.readAllSource();
-        String[] strFood = objFoodTABLE.readAllFood();
+        final String[] strFood = objFoodTABLE.readAllFood();
         String[] strPrice = objFoodTABLE.readAllPrice();
 
         MyAdapter objMyAdapter = new MyAdapter(OrderActivity.this, strSource, strFood, strPrice);
         foodListView.setAdapter(objMyAdapter);
 
+        foodListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                foodString = strFood[i];
+                chooseItem();
+            }
+        });
+
 
     }   // createListView
+
+    private void chooseItem() {
+
+        final CharSequence[] itemCharSequence = {"1 จาน", "2 จาน", "3 จาน", "4 จาน"};
+        AlertDialog.Builder objBuilder = new AlertDialog.Builder(this);
+        objBuilder.setTitle(foodString);
+        objBuilder.setSingleChoiceItems(itemCharSequence, -1, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                itemString = Integer.toString(i + 1);
+                updateToMySQL();
+                dialogInterface.dismiss();
+            }
+        });
+        objBuilder.show();
+    }   //chooseItem
+
+    private void updateToMySQL() {
+
+        StrictMode.ThreadPolicy objThreadPolicy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(objThreadPolicy);
+
+        try {
+
+            ArrayList<NameValuePair> objNameValuePairs = new ArrayList<NameValuePair>();
+            objNameValuePairs.add(new BasicNameValuePair("isAdd", "true"));
+            objNameValuePairs.add(new BasicNameValuePair("Officer", officerString));
+            objNameValuePairs.add(new BasicNameValuePair("Desk", deskString));
+            objNameValuePairs.add(new BasicNameValuePair("Food", foodString));
+            objNameValuePairs.add(new BasicNameValuePair("Item", itemString));
+            HttpClient objHttpClient = new DefaultHttpClient();
+            HttpPost objHttpPost = new HttpPost("http://swiftcodingthai.com/3sep/php_add_data_restaurant.php");
+            objHttpPost.setEntity(new UrlEncodedFormEntity(objNameValuePairs, "UTF-8"));
+            objHttpClient.execute(objHttpPost);
+            Toast.makeText(OrderActivity.this, "Update Order Success", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(OrderActivity.this, "Cannot Update Data", Toast.LENGTH_SHORT).show();
+        }
+
+    }   // updateToMySQL
 
     private void createDeskSpinner() {
         final String[] strDeskArray = {"1A", "2A", "3A", "4A", "5A"};
