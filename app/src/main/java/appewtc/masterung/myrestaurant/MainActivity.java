@@ -13,8 +13,12 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -82,8 +86,49 @@ public class MainActivity extends AppCompatActivity {
             }
 
             //2. Create strJSON
+            try {
+
+                BufferedReader objBufferedReader = new BufferedReader(new InputStreamReader(objInputStream, "UTF-8"));
+                StringBuilder objStringBuilder = new StringBuilder();
+                String strLine = null;
+                while ((strLine = objBufferedReader.readLine()) != null) {
+                    objStringBuilder.append(strLine);
+                }   // while
+                objInputStream.close();
+                strJSON = objStringBuilder.toString();
+
+
+            } catch (Exception e) {
+                Log.d("Rest", "JSON ==>" + e.toString());
+            }
 
             //3. Update to SQLite
+            try {
+
+                final JSONArray objJsonArray = new JSONArray(strJSON);
+                for (int i = 0; i < objJsonArray.length(); i++) {
+                    JSONObject jsonObject = objJsonArray.getJSONObject(i);
+                    if (intTimes != 1) {
+
+                        String strUser = jsonObject.getString("User");
+                        String strPassword = jsonObject.getString("Password");
+                        String strName = jsonObject.getString("Name");
+                        objUserTABLE.addNewUser(strUser, strPassword, strName);
+
+                    } else {
+
+                        String strFood = jsonObject.getString("Food");
+                        String strSource = jsonObject.getString("Source");
+                        String strPrice = jsonObject.getString("Price");
+                        objFoodTABLE.addFood(strFood, strSource, strPrice);
+
+                    }
+                }   //for
+
+            } catch (Exception e) {
+                Log.d("Rest", "Update ==> " + e.toString());
+            }
+
 
             intTimes += 1;
         }   // while
